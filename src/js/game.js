@@ -12,6 +12,7 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const CHASER_SPEED = 1 / 9; // ~0.111: el chaser es mas rapido, alinea cada 9 frames
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -40,8 +41,9 @@ function createGame() {
       x: g.x,
       y: g.y,
       dir: 'up',
-      speed: GHOST_SPEED,
+      speed: g.kind === 'chaser' ? CHASER_SPEED : GHOST_SPEED,
       kind: g.kind,
+      releaseIn: g.releaseIn,
     } ) ),
   };
 }
@@ -110,40 +112,84 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Orden de desempate al elegir direccion (como el arcade: up > left > down > right).
+const DIR_TIE_ORDER = [ 'up', 'left', 'down', 'right' ];
+
+// Celda objetivo (target) segun la personalidad del fantasma.
+function ghostTarget( game, g ) {
+  const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+  const d = DIRS[ p.dir ];
+
+  // Si aun esta dentro de la pen, apunta a la puerta: sin esto la eleccion
+  // codiciosa queda oscilando en el fondo (objetivo por debajo inalcanzable).
+  const gx = Math.round( g.x );
+  const gy = Math.round( g.y );
+  if ( gy >= 13 && gy <= 15 && gx >= 11 && gx <= 16 ) return { x: 13, y: 12 };
+
+  // chaser (Blinky): siempre la celda actual de Pacman.
+  if ( g.kind === 'chaser' ) return { x: px, y: py };
+
+  // ambusher (Pinky): 4 celdas por delante de Pacman.
+  if ( g.kind === 'ambusher' ) return { x: px + d.x * 4, y: py + d.y * 4 };
+
+  // strategist (Inky): P2 (2 por delante) reflejado desde el chaser.
+  if ( g.kind === 'strategist' ) {
+    const p2x = px + d.x * 2;
+    const p2y = py + d.y * 2;
+    const c = game.ghosts.find( ( o ) => o.kind === 'chaser' );
+    const cx = Math.round( c.x );
+    const cy = Math.round( c.y );
+    return { x: p2x + ( p2x - cx ), y: p2y + ( p2y - cy ) };
+  }
+
+  // flaky (Clyde): persigue de lejos; de cerca se retira a su esquina casa.
+  if ( g.kind === 'flaky' ) {
+    const dist = Math.abs( g.x - p.x ) + Math.abs( g.y - p.y );
+    if ( dist > 8 ) return { x: px, y: py };
+    return { x: 0, y: 30 };
+  }
+
+  return { x: px, y: py };
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
-  const p = game.pacman;
 
-  const options = Object.keys( DIRS ).filter(
+  const options = DIR_TIE_ORDER.filter(
     ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
   );
   // Sin salida (callejon): permitir el giro de 180.
-  const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+  const choices = options.length ? options : [ OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
-    let best = choices[ 0 ];
-    let bestDist = Infinity;
-    for ( const dir of choices ) {
-      const d = DIRS[ dir ];
-      const nx = g.x + d.x;
-      const ny = g.y + d.y;
-      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
-      if ( dist < bestDist ) {
-        bestDist = dist;
-        best = dir;
-      }
+  // Eleccion codiciosa: la direccion que acerca mas (distancia euclidiana al
+  // cuadrado) a la celda objetivo. Empata resuelto por DIR_TIE_ORDER.
+  const t = ghostTarget( game, g );
+  let best = choices[ 0 ];
+  let bestDist = Infinity;
+  for ( const dir of choices ) {
+    const d = DIRS[ dir ];
+    const dx = g.x + d.x - t.x;
+    const dy = g.y + d.y - t.y;
+    const dist = dx * dx + dy * dy;
+    if ( dist < bestDist ) {
+      bestDist = dist;
+      best = dir;
     }
-    g.dir = best;
-  } else {
-    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
+  g.dir = best;
 }
 
 function moveGhost( game, g ) {
   const grid = game.grid;
   const width = grid[ 0 ].length;
+
+  // Todavia retenido en la pen: no se mueve.
+  if ( g.releaseIn > 0 ) {
+    g.releaseIn--;
+    return;
+  }
 
   if ( aligned( g.x ) && aligned( g.y ) ) {
     g.x = Math.round( g.x );
@@ -168,6 +214,8 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.releaseIn = GHOST_STARTS[ i ].releaseIn;
+    g.speed = GHOST_STARTS[ i ].kind === 'chaser' ? CHASER_SPEED : GHOST_SPEED;
   } );
 }
 
