@@ -12,6 +12,7 @@ const OPPOSITE = { left: 'right', right: 'left', up: 'down', down: 'up' };
 
 const PACMAN_SPEED = 0.125; // 1/8 celda/frame -> alinea cada 8 frames
 const GHOST_SPEED = 0.1;    // 1/10 celda/frame
+const CHASER_SPEED = 1 / 9; // ~0.111: el chaser es mas rapido, alinea cada 9 frames
 
 // Crea una partida nueva. Copia MAZE (pristino) a game.grid para poder comer
 // dots sin destruir el original, y reiniciar.
@@ -40,8 +41,9 @@ function createGame() {
       x: g.x,
       y: g.y,
       dir: 'up',
-      speed: GHOST_SPEED,
+      speed: g.kind === 'chaser' ? CHASER_SPEED : GHOST_SPEED,
       kind: g.kind,
+      releaseIn: g.releaseIn,
     } ) ),
   };
 }
