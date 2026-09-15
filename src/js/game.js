@@ -214,6 +214,8 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.releaseIn = GHOST_STARTS[ i ].releaseIn;
+    g.speed = GHOST_STARTS[ i ].kind === 'chaser' ? CHASER_SPEED : GHOST_SPEED;
   } );
 }
 
