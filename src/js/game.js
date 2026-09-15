@@ -112,35 +112,67 @@ function movePacman( game ) {
   wrapTunnel( p, width );
 }
 
+// Orden de desempate al elegir direccion (como el arcade: up > left > down > right).
+const DIR_TIE_ORDER = [ 'up', 'left', 'down', 'right' ];
+
+// Celda objetivo (target) segun la personalidad del fantasma.
+function ghostTarget( game, g ) {
+  const p = game.pacman;
+  const px = Math.round( p.x );
+  const py = Math.round( p.y );
+  const d = DIRS[ p.dir ];
+
+  // chaser (Blinky): siempre la celda actual de Pacman.
+  if ( g.kind === 'chaser' ) return { x: px, y: py };
+
+  // ambusher (Pinky): 4 celdas por delante de Pacman.
+  if ( g.kind === 'ambusher' ) return { x: px + d.x * 4, y: py + d.y * 4 };
+
+  // strategist (Inky): P2 (2 por delante) reflejado desde el chaser.
+  if ( g.kind === 'strategist' ) {
+    const p2x = px + d.x * 2;
+    const p2y = py + d.y * 2;
+    const c = game.ghosts.find( ( o ) => o.kind === 'chaser' );
+    const cx = Math.round( c.x );
+    const cy = Math.round( c.y );
+    return { x: p2x + ( p2x - cx ), y: p2y + ( p2y - cy ) };
+  }
+
+  // flaky (Clyde): persigue de lejos; de cerca se retira a su esquina casa.
+  if ( g.kind === 'flaky' ) {
+    const dist = Math.abs( g.x - p.x ) + Math.abs( g.y - p.y );
+    if ( dist > 8 ) return { x: px, y: py };
+    return { x: 0, y: 30 };
+  }
+
+  return { x: px, y: py };
+}
+
 function decideGhost( game, g ) {
   const grid = game.grid;
-  const p = game.pacman;
 
-  const options = Object.keys( DIRS ).filter(
+  const options = DIR_TIE_ORDER.filter(
     ( dir ) => dir !== OPPOSITE[ g.dir ] && canMove( grid, g.x, g.y, dir, 'ghost' )
   );
   // Sin salida (callejon): permitir el giro de 180.
-  const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
+  const choices = options.length ? options : [ OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
-    const px = Math.round( p.x );
-    const py = Math.round( p.y );
-    let best = choices[ 0 ];
-    let bestDist = Infinity;
-    for ( const dir of choices ) {
-      const d = DIRS[ dir ];
-      const nx = g.x + d.x;
-      const ny = g.y + d.y;
-      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
-      if ( dist < bestDist ) {
-        bestDist = dist;
-        best = dir;
-      }
+  // Eleccion codiciosa: la direccion que acerca mas (distancia euclidiana al
+  // cuadrado) a la celda objetivo. Empata resuelto por DIR_TIE_ORDER.
+  const t = ghostTarget( game, g );
+  let best = choices[ 0 ];
+  let bestDist = Infinity;
+  for ( const dir of choices ) {
+    const d = DIRS[ dir ];
+    const dx = g.x + d.x - t.x;
+    const dy = g.y + d.y - t.y;
+    const dist = dx * dx + dy * dy;
+    if ( dist < bestDist ) {
+      bestDist = dist;
+      best = dir;
     }
-    g.dir = best;
-  } else {
-    g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
+  g.dir = best;
 }
 
 function moveGhost( game, g ) {
