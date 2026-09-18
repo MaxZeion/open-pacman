@@ -122,12 +122,6 @@ function ghostTarget( game, g ) {
   const py = Math.round( p.y );
   const d = DIRS[ p.dir ];
 
-  // Si aun esta dentro de la pen, apunta a la puerta: sin esto la eleccion
-  // codiciosa queda oscilando en el fondo (objetivo por debajo inalcanzable).
-  const gx = Math.round( g.x );
-  const gy = Math.round( g.y );
-  if ( gy >= 13 && gy <= 15 && gx >= 11 && gx <= 16 ) return { x: 13, y: 12 };
-
   // chaser (Blinky): siempre la celda actual de Pacman.
   if ( g.kind === 'chaser' ) return { x: px, y: py };
 
