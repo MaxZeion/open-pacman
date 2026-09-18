@@ -53,12 +53,12 @@ const TUNNEL_ROW = 14;
 const PACMAN_START = { x: 13, y: 23 };
 // kind: chaser (persigue directo, agresivo), ambusher (emboscada por delante),
 // strategist (vector reflejado via chaser), flaky (persigue de lejos, huye a su esquina).
-// releaseIn: frames de retardo dentro de la pen antes de empezar a moverse.
+// releaseIn: frames de retardo antes de empezar a moverse desde la celda de la puerta.
 const GHOST_STARTS = [
-  { x: 13, y: 14, kind: 'chaser',     releaseIn:   0 }, // dentro de la pen
-  { x: 14, y: 14, kind: 'ambusher',   releaseIn:  90 }, // dentro de la pen
-  { x: 13, y: 13, kind: 'strategist', releaseIn: 180 }, // dentro de la pen
-  { x: 14, y: 15, kind: 'flaky',      releaseIn: 270 }, // dentro de la pen
+  { x: 13, y: 12, kind: 'chaser',     releaseIn:   0 }, // puerta del pen
+  { x: 13, y: 12, kind: 'ambusher',   releaseIn:  90 }, // puerta del pen
+  { x: 13, y: 12, kind: 'strategist', releaseIn: 180 }, // puerta del pen
+  { x: 13, y: 12, kind: 'flaky',      releaseIn: 270 }, // puerta del pen
 ];
 
 window.MAZE = MAZE;
