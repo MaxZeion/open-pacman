@@ -122,6 +122,13 @@ function ghostTarget( game, g ) {
   const py = Math.round( p.y );
   const d = DIRS[ p.dir ];
 
+  // Mientras el fantasma este dentro del pen interior (filas 13-15, cols 11-16),
+  // apunta a la puerta: sin esto la eleccion codiciosa queda oscilando en el
+  // fondo (el destino, Pacman, suele estar mas abajo y el fondo es muro).
+  const gx = Math.round( g.x );
+  const gy = Math.round( g.y );
+  if ( gy >= 13 && gy <= 15 && gx >= 11 && gx <= 16 ) return { x: 13, y: 12 };
+
   // chaser (Blinky): siempre la celda actual de Pacman.
   if ( g.kind === 'chaser' ) return { x: px, y: py };
 
