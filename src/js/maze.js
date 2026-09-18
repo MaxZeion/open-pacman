@@ -55,10 +55,10 @@ const PACMAN_START = { x: 13, y: 23 };
 // strategist (vector reflejado via chaser), flaky (persigue de lejos, huye a su esquina).
 // releaseIn: frames de retardo antes de empezar a moverse desde la celda de la puerta.
 const GHOST_STARTS = [
-  { x: 13, y: 12, kind: 'chaser',     releaseIn:   0 }, // puerta del pen
-  { x: 13, y: 12, kind: 'ambusher',   releaseIn:  90 }, // puerta del pen
-  { x: 13, y: 12, kind: 'strategist', releaseIn: 180 }, // puerta del pen
-  { x: 13, y: 12, kind: 'flaky',      releaseIn: 270 }, // puerta del pen
+  { x: 12, y: 14, kind: 'chaser',     releaseIn:   0 }, // puerta del pen
+  { x: 13, y: 14, kind: 'ambusher',   releaseIn:  90 }, // puerta del pen
+  { x: 14, y: 14, kind: 'strategist', releaseIn: 180 }, // puerta del pen
+  { x: 15, y: 14, kind: 'flaky',      releaseIn: 270 }, // puerta del pen
 ];
 
 window.MAZE = MAZE;
